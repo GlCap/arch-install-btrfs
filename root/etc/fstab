@@ -1,0 +1,34 @@
+# Static information about the filesystems.
+# See fstab(5) for details.
+
+# <file system> <dir> <type> <options> <dump> <pass>
+
+# boot
+UUID=1888-0337                                  /boot                   vfat            rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=ascii,shortname=mixed,utf8,errors=remount-ro       0 2
+
+# root
+UUID=838262f6-fa43-4911-978c-71d6b40b14cb       /                       btrfs           rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=/@                                      0 0
+
+# home
+UUID=838262f6-fa43-4911-978c-71d6b40b14cb       /home                   btrfs           rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=/@home                                  0 0
+
+# var logs
+UUID=838262f6-fa43-4911-978c-71d6b40b14cb       /var/log                btrfs           rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=/@var_log                               0 0
+
+# var cache
+UUID=838262f6-fa43-4911-978c-71d6b40b14cb       /var/cache              btrfs           rw,relatime,compress=zstd:3,nodatacow,ssd,discard=async,space_cache=v2,subvol=/@var_cache                   0 0
+
+# /libvirt images
+UUID=838262f6-fa43-4911-978c-71d6b40b14cb       /var/lib/libvirt/images btrfs           rw,relatime,compress=zstd:3,nodatacow,ssd,discard=async,space_cache=v2,subvol=/@libvirt_images              0 0
+
+# swap subvolume
+UUID=838262f6-fa43-4911-978c-71d6b40b14cb       /swap                   btrfs           subvol=/@swap                                                                                               0 0
+
+# swapfile
+/swap/swapfile                                  none                    swap            defaults
+
+# root snapshots
+UUID=838262f6-fa43-4911-978c-71d6b40b14cb       /.snapshots             btrfs           rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=/@snapshots                             0 0
+
+# data
+UUID=b383695f-765c-4182-8a80-0efab3aec4c7       /media/data             btrfs           rw,relatime,compress=zstd:3,autodefrag,ssd,discard=async,noacl,space_cache=v2,subvol=/@data                 0 0

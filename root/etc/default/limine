@@ -1,0 +1,389 @@
+### OS Entry Targeting
+### If TARGET_OS_NAME is not set, or if the default distro name is not found in $ESP_PATH/limine.conf,
+### the tool will create a new OS entry using the default distro name (PRETTY_NAME or NAME from /etc/os-release) and machine-ID.
+###
+### Tips:
+### If your custom OS entry already exists in $ESP_PATH/limine.conf, please add "comment: machine-id=<copy ID from /etc/machine-id>" to it.
+### The machine-ID helps the tool to automatically target the correct OS entry, so changing the OS name does not matter.
+###
+TARGET_OS_NAME="Arch Linux"
+
+
+### Boot Partition Path
+### Specify the mount path of your boot partition if you are running on legacy BIOS, ARM, or RISC-V.
+### Note:
+### If you are using systemd with UEFI, the path is detected automatically via 'bootctl --print-esp-path'.
+### If detection fails, set this path manually.
+ESP_PATH="/boot"
+
+
+### Skip UEFI Check and Registration
+### Skip UEFI check and bootloader registration on certain non-compliant UEFI boards (e.g., some MSI boards) (yes|no)
+### If skipped, Limine will be used as the fallback bootloader on the standard UEFI path for all UEFI systems.
+### Note:
+### When set to yes, run 'limine-install' and manually set the BIOS boot order to make the standard UEFI path the default boot.
+#SKIP_UEFI=no
+
+
+### Kernel Command Line Configuration
+### Define one or more kernel command lines (parameters) for specific kernel entries.
+### If unset, the tool will try to read them from '/etc/kernel/cmdline' or '/proc/cmdline'.
+###
+### Rules:
+### * KERNEL_CMDLINE[default] applies to any kernel entries without specific configuration.
+### * KERNEL_CMDLINE[fallback] applies to kernel entries with names containing *fallback*
+### * KERNEL_CMDLINE[kernel name] applies to a specific kernel entry.
+###
+### Operators:
+### * `+=` appends parameters to an existing cmdline for the same KERNEL_CMDLINE[<key>]
+###    Commonly used in drop-in configs: /etc/limine-entry-tool.d/*.conf
+###    Ignores /etc/kernel/cmdline and /proc/cmdline
+### * `=` replaces an existing cmdline for the same KERNEL_CMDLINE[<key>]
+###    Note: /etc/default/limine overrides any drop-in configs, so `+=` is recommended there.
+###
+### Tips:
+### - If unsure which parameters to use, copy them from `/proc/cmdline` into KERNEL_CMDLINE[default],
+###   but make sure your system is not a live ISO, temporary environment, or snapshot.
+### - Multiple `initrd=` parameters are automatically converted into Limine module paths for non-UKI entries.
+### - No quotes are needed at the start or end of command lines, since quotes inside are not escaped.
+### - Do not add `#` as a comment at the end of command lines.
+###
+### Examples:
+#KERNEL_CMDLINE[default]+=rw root=UUID=...
+#KERNEL_CMDLINE[default]+=quiet splash acpi_osi="..."
+#KERNEL_CMDLINE[default]+=initrd=/amd-ucode.img
+#KERNEL_CMDLINE[fallback]=
+#KERNEL_CMDLINE[linux-zen]=
+KERNEL_CMDLINE[default]+="rw root=UUID=838262f6-fa43-4911-978c-71d6b40b14cb rootflags=subvol=/@"
+KERNEL_CMDLINE[default]+=initrd=/amd-ucode.img
+KERNEL_CMDLINE[linux-zen]+="rw root=UUID=838262f6-fa43-4911-978c-71d6b40b14cb rootflags=subvol=/@"
+KERNEL_CMDLINE[linux-zen]+=initrd=/amd-ucode.img
+KERNEL_CMDLINE[linux-zen]+="pcie_acs_override=downstream,multifunction"
+
+### Formatting Boot Entry:
+### Define the number of spaces to indent each line of the boot entry in '$ESP_PATH/limine.conf'.
+### If not set, the default is 2.
+SPACE_NUMBER=2
+
+
+### Boot Integrity Check:
+
+### Enable BLAKE2 checksum verification for bootable files. (yes|no)
+ENABLE_VERIFICATION=yes
+
+
+### Automatic Config Backup:
+### Creates a backup of '$ESP_PATH/limine.conf' before saving any changes,
+### but only if '$ESP_PATH/limine.conf.old' is older than the specified time (in hours).
+### Default: 6 hours if unset.
+#CONFIG_BACKUP_THRESHOLD=6
+
+
+### Kernel Entries Order:
+### Wildcard "*" matches any letter in kernel entry name
+### If ENABLE_SORT is set to "yes", only wildcard "*" entries are sorted alphabetically.
+BOOT_ORDER="*, *fallback, Snapshots"
+ENABLE_SORT=no
+
+
+### Limine UEFI Binary Path
+### Set the path to the Limine UEFI binary. Default: '/usr/share/limine/BOOTX64.EFI' (from the limine package on Arch Linux)
+### It will be copied to '$ESP_PATH/EFI/limine/limine_x64.efi' when running 'limine-install'.
+### Set SKIP_LIMINE_VERSION_CHECK=yes to always deploy the Limine binary regardless of version.
+#LIMINE_BINARY_PATH="/usr/share/limine/BOOTX64.EFI"
+#SKIP_LIMINE_VERSION_CHECK=no
+
+### Default Boot Fallback
+### Configure whether Limine should be installed as the default UEFI fallback loader. (yes|no|"")
+### This helps preserve bootability on UEFI systems where BIOS, firmware, or Windows updates may remove custom Linux UEFI entries.
+###
+### Options:
+### * "yes"               -> Always create, update, or overwrite the fallback on each limine-update.
+### * "no"                -> Do nothing.
+### * "" or commented out -> Create the fallback only if it is not present. If a fallback exists, leave it untouched.
+###
+### Note:
+### With Secure Boot enabled, the default fallback is not signed automatically by limine-update for some reason.
+### If you need to sign it, it is recommended to disable ENABLE_LIMINE_FALLBACK, run 'limine-install --fallback' once,
+### and then sign the fallback manually.
+###
+#ENABLE_LIMINE_FALLBACK=""
+
+
+### Find Bootloaders:
+### Automatically add systemd-boot, rEFInd, or the default EFI loader to Limine if they are found in the ESP. (yes|no)
+FIND_BOOTLOADERS=yes
+
+
+### Authentication Method
+### Specify an authentication method: "sudo", "doas", "pkexec", "run0 --background=" or another method of your choice.
+#AUTH_METHOD=sudo
+
+
+### Quiet Mode
+### Set to "yes" to hide all success messages and avoid log spam. (yes|no)
+#QUIET_MODE=no
+
+
+### Enroll Limine Config
+### Automatically embeds a checksum of the Limine config into the Limine binary to protect it against unauthorized modifications.
+###
+### WARNING:
+### Enabling this will PREVENT booting if you modify limine.conf without re-enrolling it afterward.
+###
+### If you are unsure but want to try it, run 'limine-install --fallback' first.
+### This allows you to boot into the Limine fallback if a boot panic occurs due to a config checksum mismatch.
+###
+### IMPORTANT:
+### * After editing limine.conf, always run 'limine-enroll-config'
+### * Remove all other Limine configs from alternative locations to avoid boot failures.
+### * If using limine-snapper-sync, make sure you have:
+###   - /etc/boot/hooks/pre.d/ with a symlink 10-limine-reset-enroll -> /usr/bin/limine-reset-enroll
+###   - /etc/boot/hooks/post.d/ with a symlink 90-limine-enroll-config -> /usr/bin/limine-enroll-config
+### * If multiple systems share the same limine.conf, ensure each system handles enrollment automatically.
+###
+### To enable, copy this option to /etc/default/limine and set it to (yes|no)
+ENABLE_ENROLL_LIMINE_CONFIG=yes
+
+### Custom UKI Name
+### Set a shorter, custom name for your UKI files instead of using the default machine-id.
+### This can help when booting UKIs directly via EFISTUB (without any bootloader),
+### since some buggy UEFI firmware (e.g. Asus AMI BIOS) may crash or freeze if UKI filenames are too long when registered in UEFI.
+###
+### Rules:
+### * Custom name must be unique (like an ID) to avoid conflicts with other installations, otherwise UKIs will be overwritten.
+### * Use only lowercase letters (a–z) and digits (0–9) for maximum compatibility with UEFI firmware and devices.
+###
+### Example: ${CUSTOM_UKI_NAME}_${kernel_version}.efi -> arch_linux-lts.efi (when CUSTOM_UKI_NAME="arch" is set)
+### Default: The machine-id is used if the custom name is invalid or not set.
+###
+### WARNING:
+### If you change the name, old UKI files with the previous prefix (name or ID) remain unused on the ESP;
+### remove them manually to free up ESP space if not needed: $ESP_PATH/EFI/Linux/{machine-id or old name}_{kernel_version}.efi
+CUSTOM_UKI_NAME="arch"
+
+### mkinitcpio UKI Build Options
+### Additional options for mkinitcpio UKI builds
+### See: https://man.archlinux.org/man/mkinitcpio.8.en#OPTIONS_FOR_UNIFIED_KERNEL_IMAGE
+### Example: Add a splash screen
+#MKINITCPIO_UKI_OPTIONS="--splash /usr/share/systemd/bootctl/splash-arch.bmp"
+
+
+##############  Below options apply to Arch Linux when 'limine-mkinitcpio-hook' is installed ##############
+
+### UKI (Unified Kernel Image):
+### Automatically create UKIs in '$ESP_PATH/EFI/Linux/' using mkinitcpio for UEFI. (yes|no)
+###
+### Advantage:
+###  - UKIs are automatically loaded by bootloaders like 'systemd-boot' and 'rEFInd'.
+### Disadvantage:
+###  - UKIs use more ESP space compared to separate 'initramfs' and 'vmlinuz' files, especially with multiple Limine snapshots.
+###
+### Additional notes:
+### - Duplicate 'initramfs' and 'vmlinuz' files are removed when 'limine-mkinitcpio' or 'limine-update' is run to generate a UKI.
+### - UKI ignores booting into a snapshot when Secure Boot is enabled. To resolve this, any embedded kernel cmdline is removed from the UKI, which will then read the external kernel cmdline.
+ENABLE_UKI=yes
+
+### Dracut Fallback Configuration
+### Automatically create a kernel fallback image using Dracut. (yes|no)
+### If set to 'yes,' this will consume a lot of storage space, especially when taking multiple snapshots.
+DRACUT_FALLBACK=no
+
+
+### Max Snapshot Entries:
+### Sets the limit for how many snapshot entries show up in the boot menu.
+### This depends on the size of your FAT32 boot partition and how many different kernel and module versions you want to keep.
+### A larger FAT32 boot partition allows more snapshot entries.
+MAX_SNAPSHOT_ENTRIES=100
+
+
+### Boot Partition Usage Limit:
+### Sets a usage limit (in percent) for your FAT32 boot partition. Value must be between 1-99. Default: 85.
+### No new snapshot entries will be added to Limine if this limit is reached.
+### A larger FAT32 boot partition allows for more snapshot entries.
+###
+### Tip: Install "journalctl-desktop-notification" to get notified when the limit is exceeded.
+LIMIT_USAGE_PERCENT=85
+
+
+### Exclude Snapshot Types
+### If a snapshot has a matching type, it will not be added into Limine.
+###
+### Example:
+###   EXCLUDE_SNAPSHOT_TYPES="pre, post"
+###
+#EXCLUDE_SNAPSHOT_TYPES=""
+
+
+### Exclude Entries from Snapshots
+### Matching kernels or entries are excluded from Limine snapshots. This helps reduce boot partition space usage.
+###
+### WARNING:
+### - Restoring an old snapshot may use outdated config and exclude unintended entries from the current "backup" snapshot.
+### - Excluded entries are preserved after restore, but may not match an old system version. They should be removed or updated manually.
+###
+### Note:
+### - "backup*" and "*snapshot*" entries are always excluded by default, regardless of any configuration.
+###
+### Wildcards:
+###  "*" matches any sequence of characters
+###
+### Example: excluding all fallback kernel entries
+#EXCLUDE_SNAPSHOT_ENTRIES="*fallback"
+
+
+### Snapshot Kernel Parameters
+### Add or remove kernel parameters for new snapshot boot entries.
+###
+### - SNAPSHOT_KERNEL_PARAMETERS+ : Add extra kernel parameters
+### - SNAPSHOT_KERNEL_PARAMETERS- : Remove specific kernel parameters
+### - SNAPSHOT_KERNEL_PARAMETERS= : Replace the entire kernel command line (note: for multiple-profile UKIs only)
+###
+### Tips:
+### - No quotes are needed at the start or end of command lines, since quotes inside are not escaped.
+### - Do not add `#` as a comment at the end of command lines.
+###
+### Examples:
+#SNAPSHOT_KERNEL_PARAMETERS-=quiet splash
+SNAPSHOT_KERNEL_PARAMETERS+=nowatchdog
+
+
+### Make Snapshots Writable
+### Set to 'yes' to make created snapshots writable. (yes|no)
+### This may be required by some programs or display managers (e.g. GDM) that need write access at boot when overlayfs is not used.
+###
+### WARNING:
+### Writable snapshots can be modified and will no longer reflect the original 1:1 state.
+### Enable only if absolutely necessary.
+###
+### IMPORTANT:
+### If you boot into a writable snapshot, you should immediately click "Restore now" to avoid making unintended changes.
+#SNAPSHOT_WRITABLE=no
+
+
+### Snapper Configuration Name
+### Specify the Snapper configuration name. If not set, the tool will automatically detect it from "snapper list-configs".
+### Specifying it manually improves performance by avoiding automatic detection overhead.
+SNAPPER_CONFIG_NAME="root"
+
+
+### Root Subvolume Path
+### Set the path to your root subvolume. The default value for some distros is "/@".
+ROOT_SUBVOLUME_PATH="/@"
+
+
+### Root Snapshot Path
+### Specify the path to your root snapshots. The default is "/@/.snapshots", which is used for the default Snapper layout.
+### Note: The tool supports Snapper with any custom layout within the same filesystem, but not random Btrfs layouts without Snapper.
+ROOT_SNAPSHOTS_PATH="/@snapshots"
+
+
+### Restore Method Selection
+### Choose a restore method depending on your Btrfs layout and boot configuration.
+### Indicators: (+) Advantage, (-) Disadvantage, (o) Neutral/Special note
+###
+### rsync:
+### + Works on a system running on a root partition without a root subvolume.
+### + Supports multiple Linux installations on the same Btrfs filesystem.
+### + No issues with overlayfs used as a temporary writable layer on top of a read-only snapshot.
+### o Keeps the original subvolume ID after restore.
+### - Slower because all data is copied 1:1 from a selected snapshot to the root subvolume.
+### - Does not track which snapshot the restored data originally came from.
+###
+### replace:
+### + Very fast, creates a new subvolume from a selected snapshot and replaces the old one.
+### + Supports multiple root subvolumes (e.g., multiple distros) on the same Btrfs filesystem.
+### + No issues with overlayfs used as a temporary writable layer on top of a read-only snapshot.
+### o Changes the subvolume ID after restore.
+### - Restored subvolumes lose tracking of their relationship to older snapshots in the Snapper list.
+### - Cannot restore when system runs on a root partition without a root subvolume.
+###
+### opensuse (alias of "snapper"):
+### + Supports native snapper rollback.
+### + Fast (slightly slower than "replace" because 'snapper rollback' creates two snapshots).
+### + Tracks snapshot relationships in the Snapper list, unlike "rsync" and "replace".
+### o Requires an OpenSUSE-style layout compatible with snapper rollback.
+### o Keeps the original main subvolume unchanged as the oldest base.
+### - Does not support multiple Linux distros on the same Btrfs (only one default subvolume for booting).
+### - Refuses to work when overlayfs is used as a temporary writable layer for testing changes on an immutable system.
+### - Some init programs (e.g., display managers) require write access and may fail when booting into a read-only snapshot.
+### (Info: In major v2, new 4th restore method would remove these last two disadvantages)
+###
+### Tip: Recommendation for a safe choice if unsure:
+### - If your system normally runs on a root subvolume, use "replace" or "rsync". (typical for most Arch-based installations)
+### - If your system normally runs on a root Btrfs partition without a root subvolume, use "rsync".
+### - If your system normally runs on a writable snapshot, use "opensuse". (For OpenSUSE or an OpenSUSE-like layout).
+###
+### Available restore methods: "replace", "rsync" or "opensuse" ("snapper")
+RESTORE_METHOD=replace
+
+
+### Set Snapshot as Default
+### After restoring a snapshot, you can choose whether its new subvolume should automatically become the default (yes|no).
+###
+### What is a "default subvolume"?
+### It is the subvolume your system boots into if no subvolume is specified in the kernel command line.
+### On OpenSUSE, it is also required for 'snapper rollback'.
+###
+### yes: A newly created snapshot will automatically become the default subvolume after restoration.
+###       WARNING: This may cause problems or conflicts if multiple Linux distributions (e.g. OpenSUSE) share the same Btrfs partition.
+###       Recommendation: Set to yes only if your distro is the only one on the Btrfs partition.
+###
+### no:  The original subvolume remains the default.
+###       Note: If it is listed as the "backup" subvolume in Snapper, it cannot be deleted.
+###
+### Note:
+### This option is not needed for rsync-based restoration, which always preserves the original subvolume.
+###
+SET_SNAPSHOT_AS_DEFAULT=no
+
+
+### Btrfs UUID
+### Specify the UUID of your Btrfs filesystem, used only during the restore process.
+### If not set, the tool automatically determines the UUID during initialization and saves it in 'snapshots.json'. 
+### If the saved UUID becomes outdated, set it manually.
+#FS_UUID=
+
+
+### Authentication Method for Restore:
+### Specify an authentication method for restore process. Options include 'sudo', 'doas', 'pkexec', `run0` or another method of your choice.
+### If not set, 'pkexec' is used for Wayland/X11 environments, and 'sudo' for TTY.
+#AUTH_METHOD=sudo
+
+
+### Terminal Application:
+### Specify a terminal app and its argument to open the console UI for running the restore process with details.
+### For example, "konsole -e" for KDE or "gnome-terminal -- bash -c" for GNOME.
+TERMINAL=konsole
+TERMINAL_ARG="-e"
+
+
+### Snapshot Name Format:
+### Choose the format for how snapshot entries look in the Limine bootloader:
+### 0. ID=111 2023-12-20 10:59:59 (default)
+### 1. 111│2023-12-20 10:59:59
+### 2. 111 │ 2023-12-20 10:59:59
+### 3. 2023-12-20 10:59:59│111
+### 4. 2023-12-20 10:59:59 │ 111
+### 5. 2023-12-20 10:59:59
+### 6. 111
+SNAPSHOT_FORMAT_CHOICE=2
+
+### Desktop Notifications
+### Enable desktop notifications for warnings and errors in limine-snapper-sync, e.g., hardware issues or boot partition usage limits.
+### Default: yes
+ENABLE_NOTIFICATION=yes
+
+
+### Hash Function for Deduplication and Checksum:
+### Choose a hash function to prevent duplicate boot file copies. Options: "blake3", "sha1", or "sha256".
+###
+### WARNING: Changing the hash function will not affect existing file hashes, which may lead to duplicate files.
+###
+### Note: If you choose "blake3", the 'b3sum' utility must be installed manually.
+HASH_FUNCTION=blake3
+
+
+### Notification Icon:
+### Set a custom icon to display in notifications when booting into a read-only snapshot and prompting for restoration.
+NOTIFICATION_ICON="/usr/share/icons/hicolor/128x128/apps/LimineSnapperSync.png"
