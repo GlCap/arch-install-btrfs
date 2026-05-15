@@ -3,7 +3,7 @@
 Set device variable
 
 ```bash
-export DISK=/dev/nvme0n1
+export DISK=nvme0n1
 export ROOT_DEVICE="/dev/${DISK}p2"
 export EFI_DEVICE="/dev/${DISK}p1"
 ```
@@ -141,7 +141,7 @@ passwd
 Create user with admin credentials
 
 ```bash
-useradd -G power,ftp,games,network,power,i2c,video,storage,input,audio,wheel -s /bin/bash username
+useradd -G power,ftp,games,network,video,storage,input,audio,wheel -s /bin/bash username
 passwd username
 ```
 
