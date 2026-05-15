@@ -150,8 +150,8 @@ passwd username
 Install base Limine bootloader into EFI
 
 ```bash
-mkdir -p $EFI_DEVICE/EFI/arch-limine
-cp /usr/share/limine/BOOTX64.EFI $EFI_DEVICE/EFI/arch-limine/
+mkdir -p /boot/EFI/arch-limine
+cp /usr/share/limine/BOOTX64.EFI /boot/EFI/arch-limine/
 
 efibootmgr \
       --create \
